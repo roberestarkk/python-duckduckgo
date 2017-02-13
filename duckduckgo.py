@@ -5,10 +5,11 @@
 #
 # See LICENSE for terms of usage, modification and redistribution.
 
-import urllib
-import urllib2
+import urllib.request, urllib.parse, urllib.error
 import json as j
 import sys
+
+__module_name__ = "DuckDuckGo"
 
 __version__ = 0.242
 
@@ -47,12 +48,12 @@ def query(query, useragent='python-duckduckgo '+str(__version__), safesearch=Tru
         'd': meanings,
         }
     params.update(kwargs)
-    encparams = urllib.urlencode(params)
+    encparams = urllib.parse.urlencode(params)
     url = 'http://api.duckduckgo.com/?' + encparams
 
-    request = urllib2.Request(url, headers={'User-Agent': useragent})
-    response = urllib2.urlopen(request)
-    json = j.loads(response.read())
+    request = urllib.request.Request(url, headers={'User-Agent': useragent})
+    response = urllib.request.urlopen(request)
+    json = j.loads(response.read().decode())
     response.close()
 
     return Results(json)
@@ -134,14 +135,14 @@ class Definition(object):
         self.source = json.get('DefinitionSource')
 
 
-def get_zci(q, web_fallback=True, priority=['answer', 'abstract', 'related.0', 'definition'], urls=True, **kwargs):
+def get_zci(q, web_fallback=True, priority=['answer', 'definition', 'abstract', 'related.0'], urls=True, **kwargs):
     '''A helper method to get a single (and hopefully the best) ZCI result.
     priority=list can be used to set the order in which fields will be checked for answers.
     Use web_fallback=True to fall back to grabbing the first web result.
     passed to query. This method will fall back to 'Sorry, no results.' 
     if it cannot find anything.'''
 
-    ddg = query('\\'+q, **kwargs)
+    ddg = query(q, **kwargs)
     response = ''
 
     for p in priority:
@@ -174,13 +175,13 @@ def get_zci(q, web_fallback=True, priority=['answer', 'abstract', 'related.0', '
 def main():
     if len(sys.argv) > 1:
         q = query(' '.join(sys.argv[1:]))
-        keys = q.json.keys()
+        keys = list(q.json.keys())
         keys.sort()
         for key in keys:
             sys.stdout.write(key)
-            if type(q.json[key]) in [str,unicode,int]: print(':', q.json[key])
+            if type(q.json[key]) in [str,str,int]: print((':', q.json[key]))
             else: 
                 sys.stdout.write('\n')
-                for i in q.json[key]: print('\t',i)
+                for i in q.json[key]: print(('\t',i))
     else:
-        print('Usage: %s [query]' % sys.argv[0])
+        print(('Usage: %s [query]' % sys.argv[0]))
